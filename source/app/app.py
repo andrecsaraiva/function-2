@@ -7,4 +7,4 @@ def run(request):
     payload = request.get_json(silent=True) or {}
     name = payload.get("name", "World")
 
-    return jsonify({"message": f"Developer name: {name}"}), 200
+    return jsonify({"message": f"Hello {name}"}), 200

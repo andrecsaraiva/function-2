@@ -1,10 +1,22 @@
 from flask import jsonify
+from app.gcp_connection import GcpConnection
+
 
 def run(request):
     if request.method != "POST":
         return jsonify({"error": "Use POST"}), 405
 
-    payload = request.get_json(silent=True) or {}
-    name = payload.get("name", "World")
+    try:
+        conn = GcpConnection()
+        row = conn.insert_test_row()
 
-    return jsonify({"message": f"Developer: {name}"}), 200
+        return jsonify({
+            "message": "Linha inserida com sucesso no BigQuery.",
+            "table": conn.table_id,
+            "row": row
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 500

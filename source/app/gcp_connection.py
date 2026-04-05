@@ -1,7 +1,6 @@
 from google.cloud import bigquery
 from app.data_config import GCP_PROJECT, BQ_DATASET, BQ_TABLE
 
-
 class GcpConnection:
     def __init__(self):
         self.client = bigquery.Client(project=GCP_PROJECT)

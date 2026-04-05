@@ -1,4 +1,6 @@
+from typing import List, Dict, Any
 from google.cloud import bigquery
+
 from app.data_config import GCP_PROJECT, BQ_DATASET, BQ_TABLE
 
 class GcpConnection:
@@ -6,7 +8,26 @@ class GcpConnection:
         self.client = bigquery.Client(project=GCP_PROJECT)
         self.table_id = f"{GCP_PROJECT}.{BQ_DATASET}.{BQ_TABLE}"
 
-    def insert_test_row(self) -> dict:
+    def insert_row(self, row: Dict[str, Any]) -> Dict[str, Any]:
+        errors = self.client.insert_rows_json(self.table_id, [row])
+
+        if errors:
+            raise Exception(f"Erro ao inserir linha no BigQuery: {errors}")
+
+        return row
+
+    def insert_rows(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        if not rows:
+            raise ValueError("A lista de linhas está vazia.")
+
+        errors = self.client.insert_rows_json(self.table_id, rows)
+
+        if errors:
+            raise Exception(f"Erro ao inserir linhas no BigQuery: {errors}")
+
+        return rows
+
+    def insert_test_row(self) -> Dict[str, Any]:
         row = {
             "cif": "009001",
             "snh": "123456",
@@ -24,9 +45,8 @@ class GcpConnection:
             "motorista": ""
         }
 
-        errors = self.client.insert_rows_json(self.table_id, [row])
+        return self.insert_row(row)
 
-        if errors:
-            raise Exception(f"Erro ao inserir no BigQuery: {errors}")
-
-        return row
+    def query(self, sql: str):
+        query_job = self.client.query(sql)
+        return query_job.result()

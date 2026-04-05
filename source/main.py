@@ -7,10 +7,8 @@ from app.validacao_requests import ValidarRequests
 
 logging.basicConfig(level=logging.INFO)
 
-
 def main(request):
     return process(request)
-
 
 def process(request):
     request_id = str(uuid4())

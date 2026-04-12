@@ -4,7 +4,7 @@ from flask import jsonify
 from app.gcp_connection import GcpConnection
 from app.obter_arquivo import obter_arquivo_request
 
-def process_action(validated_request, request_id: str):
+def run(validated_request, request_id: str):
     logging.info(f"[{request_id}] Tipo do request: {validated_request.request_type}")
     logging.info(f"[{request_id}] Action recebida: {validated_request.action}")
 

@@ -2,7 +2,7 @@ import logging
 from uuid import uuid4
 from flask import jsonify
 
-from app.app import process_action
+from app.app import run
 from app.validacao_requests import ValidarRequests
 
 logging.basicConfig(level=logging.INFO)
@@ -20,7 +20,7 @@ def process(request):
             request_id=request_id
         ).validar()
 
-        return process_action(
+        return run(
             validated_request=validated_request,
             request_id=request_id
         )

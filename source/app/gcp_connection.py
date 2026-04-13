@@ -3,6 +3,7 @@ from google.cloud import bigquery
 
 from app.data_config import GCP_PROJECT, BQ_DATASET, BQ_TABLE
 
+
 class GcpConnection:
     def __init__(self):
         self.client = bigquery.Client(project=GCP_PROJECT)
@@ -27,6 +28,27 @@ class GcpConnection:
 
         return rows
 
+    def load_rows(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        if not rows:
+            raise ValueError("A lista de linhas está vazia.")
+
+        job_config = bigquery.LoadJobConfig(
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND
+        )
+
+        load_job = self.client.load_table_from_json(
+            rows,
+            self.table_id,
+            job_config=job_config
+        )
+
+        load_job.result()
+
+        if load_job.errors:
+            raise Exception(f"Erro ao carregar linhas no BigQuery: {load_job.errors}")
+
+        return rows
+
     def insert_test_row(self) -> Dict[str, Any]:
         row = {
             "cif": "009001",
@@ -37,12 +59,12 @@ class GcpConnection:
             "hora_inicio": "03:30",
             "hora_final": "06:10",
             "chegada": "07/02/2026",
-            "veic_placa": "162203 GDS 3I42",
+            "veic": "162203",
+            "placa": "GDS 3I42",
             "atv": "ESCALA",
             "orig": "BAURU",
             "dest": "ARACATUBA",
-            "obs": "",
-            "motorista": ""
+            "obs": ""
         }
 
         return self.insert_row(row)

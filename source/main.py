@@ -15,15 +15,8 @@ def process(request):
     logging.info(f"[{request_id}] Início da requisição")
 
     try:
-        validated_request = ValidarRequests(
-            request=request,
-            request_id=request_id
-        ).validar()
-
-        return run(
-            validated_request=validated_request,
-            request_id=request_id
-        )
+        validated_request = ValidarRequests(request=request,request_id=request_id).validar()
+        return run(validated_request=validated_request,request_id=request_id)
 
     except ValueError as e:
         logging.warning(f"[{request_id}] Erro de validação: {e}")

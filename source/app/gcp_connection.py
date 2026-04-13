@@ -72,3 +72,39 @@ class GcpConnection:
     def query(self, sql: str):
         query_job = self.client.query(sql)
         return query_job.result()
+    
+    def get_escala_by_cif(self, cif: str, view_name: str = "vw_escala_app_ordenada") -> List[Dict[str, Any]]:
+        sql = f"""
+            SELECT
+              cif,
+              snh,
+              tip,
+              saida,
+              ds,
+              hora_inicio,
+              hora_final,
+              chegada,
+              veic,
+              placa,
+              atv,
+              orig,
+              dest,
+              obs,
+              cif_num,
+              ordem_tipo,
+              ordem_linha_cif
+            FROM `{GCP_PROJECT}.{BQ_DATASET}.{view_name}`
+            WHERE REGEXP_REPLACE(cif, r'^0+', '') = @cif
+            ORDER BY ordem_linha_cif
+        """
+
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("cif", "STRING", cif)
+            ]
+        )
+
+        query_job = self.client.query(sql, job_config=job_config)
+        results = query_job.result()
+
+        return [dict(row.items()) for row in results]

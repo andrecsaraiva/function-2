@@ -77,6 +77,23 @@ def _ler_csv_escala(arquivo) -> list[dict]:
             pass
         arquivo.stream.seek(0)
 
+def _normalizar_cif(cif: str) -> str:
+    cif = str(cif or "").strip()
+    if not cif:
+        return ""
+    return cif.lstrip("0") or "0"
+
+def _montar_resposta_escala(rows: list[dict]) -> dict:
+    identificacao = next((row for row in rows if row.get("tip") == "0"), None)
+    avisos = [row for row in rows if row.get("tip") not in ("0", "A", "E")]
+    escalas = [row for row in rows if row.get("tip") in ("A", "E")]
+
+    return {
+        "identificacao": identificacao,
+        "avisos": avisos,
+        "escalas": escalas,
+        "rows": rows
+    }
 
 def run(validated_request, request_id: str):
     logging.info(f"[{request_id}] Tipo do request: {validated_request.request_type}")
@@ -106,6 +123,39 @@ def run(validated_request, request_id: str):
             }), 200
 
     elif validated_request.request_type == "json":
+        if validated_request.action == "buscar_escala_por_cif":
+            cif_informado = str(validated_request.data.get("cif", "")).strip()
+            if not cif_informado:
+                raise ValueError("Para a action 'buscar_escala_por_cif', o parâmetro 'cif' é obrigatório.")
+
+            cif_consultado = _normalizar_cif(cif_informado)
+            rows = conn.get_escala_by_cif(cif_consultado)
+
+            if not rows:
+                return jsonify({
+                    "success": False,
+                    "request_id": request_id,
+                    "action": validated_request.action,
+                    "cif_informado": cif_informado,
+                    "cif_consultado": cif_consultado,
+                    "message": "Nenhuma escala encontrada para o CIF informado."
+                }), 404
+
+            resposta = _montar_resposta_escala(rows)
+
+            return jsonify({
+                "success": True,
+                "request_id": request_id,
+                "action": validated_request.action,
+                "cif_informado": cif_informado,
+                "cif_consultado": cif_consultado,
+                "total_rows": len(rows),
+                "identificacao": resposta["identificacao"],
+                "avisos": resposta["avisos"],
+                "escalas": resposta["escalas"],
+                "rows": resposta["rows"]
+            }), 200
+
         if validated_request.arquivo_path:
             logging.info(
                 f"[{request_id}] Caminho de arquivo recebido via JSON: {validated_request.arquivo_path}"
@@ -114,8 +164,6 @@ def run(validated_request, request_id: str):
             # TODO:
             # Aqui futuramente vamos buscar o arquivo no bucket
             # usando o caminho/link recebido em 'arquivo'.
-
-    inserted_row = conn.insert_test_row()
 
     return jsonify({
         "success": True,

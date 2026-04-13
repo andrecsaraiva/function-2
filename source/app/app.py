@@ -166,13 +166,9 @@ def run(validated_request, request_id: str):
             # usando o caminho/link recebido em 'arquivo'.
 
     return jsonify({
-        "success": True,
+        "success": False,
         "request_id": request_id,
-        "message": "Requisição validada e linha de teste inserida com sucesso no BigQuery.",
+        "message": f"A action '{validated_request.action}' não foi implementada para esse tipo de request.",
         "request_type": validated_request.request_type,
-        "action": validated_request.action,
-        "arquivo_info": arquivo_info,
-        "arquivo_json": validated_request.arquivo_path,
-        "table": conn.table_id,
-        "inserted_row": inserted_row
-    }), 200
+        "action": validated_request.action
+    }), 400

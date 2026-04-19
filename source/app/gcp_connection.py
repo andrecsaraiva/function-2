@@ -33,6 +33,23 @@ class GcpConnection:
             raise ValueError("A lista de linhas está vazia.")
 
         job_config = bigquery.LoadJobConfig(
+            schema=[
+                bigquery.SchemaField("cif", "STRING"),
+                bigquery.SchemaField("snh", "STRING"),
+                bigquery.SchemaField("tip", "STRING"),
+                bigquery.SchemaField("saida", "STRING"),
+                bigquery.SchemaField("ds", "STRING"),
+                bigquery.SchemaField("hora_inicio", "STRING"),
+                bigquery.SchemaField("hora_final", "STRING"),
+                bigquery.SchemaField("chegada", "STRING"),
+                bigquery.SchemaField("veic", "STRING"),
+                bigquery.SchemaField("placa", "STRING"),
+                bigquery.SchemaField("atv", "STRING"),
+                bigquery.SchemaField("orig", "STRING"),
+                bigquery.SchemaField("dest", "STRING"),
+                bigquery.SchemaField("obs", "STRING"),
+            ],
+            autodetect=False,
             write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE
         )
 

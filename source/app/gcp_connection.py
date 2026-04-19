@@ -33,7 +33,7 @@ class GcpConnection:
             raise ValueError("A lista de linhas está vazia.")
 
         job_config = bigquery.LoadJobConfig(
-            write_disposition=bigquery.WriteDisposition.WRITE_APPEND
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE
         )
 
         load_job = self.client.load_table_from_json(

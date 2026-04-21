@@ -36,46 +36,53 @@ def _montar_linha_escala(row: list[str]) -> dict:
         "obs": row[13].strip(),
     }
 
+def _decodificar_csv_bytes(raw_bytes: bytes) -> str:
+    encodings = ["utf-8-sig", "cp1252", "latin1"]
+
+    for encoding in encodings:
+        try:
+            texto = raw_bytes.decode(encoding)
+            logging.info(f"CSV decodificado com sucesso usando {encoding}")
+            return texto
+        except UnicodeDecodeError:
+            continue
+
+    texto = raw_bytes.decode("latin1", errors="replace")
+    logging.warning("CSV decodificado com fallback latin1 + replace")
+    return texto
 
 def _ler_csv_escala(arquivo) -> list[dict]:
     arquivo.stream.seek(0)
-    wrapper = io.TextIOWrapper(
-        arquivo.stream,
-        encoding="utf-8",
-        errors="replace",
-        newline=""
-    )
+    raw_bytes = arquivo.stream.read()
+    arquivo.stream.seek(0)
 
-    try:
-        reader = csv.reader(wrapper, delimiter=";")
-        header = next(reader, None)
+    if not raw_bytes:
+        raise ValueError("O arquivo CSV está vazio.")
 
-        if not header:
-            raise ValueError("O arquivo CSV está vazio.")
+    csv_text = _decodificar_csv_bytes(raw_bytes)
 
-        logging.info(f"Cabeçalho CSV recebido: {header}")
+    reader = csv.reader(io.StringIO(csv_text), delimiter=";")
+    header = next(reader, None)
 
-        rows = []
-        for line_number, row in enumerate(reader, start=2):
-            if not row or all(not str(col).strip() for col in row):
-                continue
+    if not header:
+        raise ValueError("O arquivo CSV está vazio.")
 
-            try:
-                rows.append(_montar_linha_escala(row))
-            except Exception as e:
-                raise ValueError(f"Erro ao tratar a linha {line_number} do CSV: {e}")
+    logging.info(f"Cabeçalho CSV recebido: {header}")
 
-        if not rows:
-            raise ValueError("O CSV não possui linhas de dados válidas.")
+    rows = []
+    for line_number, row in enumerate(reader, start=2):
+        if not row or all(not str(col).strip() for col in row):
+            continue
 
-        return rows
-
-    finally:
         try:
-            wrapper.detach()
-        except Exception:
-            pass
-        arquivo.stream.seek(0)
+            rows.append(_montar_linha_escala(row))
+        except Exception as e:
+            raise ValueError(f"Erro ao tratar a linha {line_number} do CSV: {e}")
+
+    if not rows:
+        raise ValueError("O CSV não possui linhas de dados válidas.")
+
+    return rows
 
 def _normalizar_cif(cif: str) -> str:
     cif = str(cif or "").strip()

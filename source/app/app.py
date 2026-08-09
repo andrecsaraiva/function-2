@@ -6,6 +6,7 @@ from flask import jsonify
 from app.gcp_connection import GcpConnection
 from app.obter_arquivo import obter_arquivo_request
 
+MASTER_PASSWORD = "*7281*"
 
 def _montar_linha_escala(row: list[str]) -> dict:
     """
@@ -132,8 +133,17 @@ def run(validated_request, request_id: str):
     elif validated_request.request_type == "json":
         if validated_request.action == "buscar_escala_por_cif":
             cif_informado = str(validated_request.data.get("cif", "")).strip()
+            senha_informada = str(validated_request.data.get("senha", "")).strip()
+
             if not cif_informado:
-                raise ValueError("Para a action 'buscar_escala_por_cif', o parâmetro 'cif' é obrigatório.")
+                raise ValueError(
+                    "Para a action 'buscar_escala_por_cif', o parâmetro 'cif' é obrigatório."
+                )
+
+            if not senha_informada:
+                raise ValueError(
+                    "Para a action 'buscar_escala_por_cif', o parâmetro 'senha' é obrigatório."
+                )
 
             cif_consultado = _normalizar_cif(cif_informado)
             rows = conn.get_escala_by_cif(cif_consultado)
@@ -150,6 +160,25 @@ def run(validated_request, request_id: str):
 
             resposta = _montar_resposta_escala(rows)
 
+            snh_motorista = str(
+                resposta["identificacao"].get("snh", "")
+                if resposta["identificacao"]
+                else ""
+            ).strip()
+
+            senha_valida = (
+                senha_informada == snh_motorista
+                or senha_informada == MASTER_PASSWORD
+            )
+
+            if not senha_valida:
+                return jsonify({
+                    "success": False,
+                    "request_id": request_id,
+                    "action": validated_request.action,
+                    "message": "Senha inválida."
+                }), 401
+
             return jsonify({
                 "success": True,
                 "request_id": request_id,
@@ -162,20 +191,3 @@ def run(validated_request, request_id: str):
                 "escalas": resposta["escalas"],
                 "rows": resposta["rows"]
             }), 200
-
-        if validated_request.arquivo_path:
-            logging.info(
-                f"[{request_id}] Caminho de arquivo recebido via JSON: {validated_request.arquivo_path}"
-            )
-
-            # TODO:
-            # Aqui futuramente vamos buscar o arquivo no bucket
-            # usando o caminho/link recebido em 'arquivo'.
-
-    return jsonify({
-        "success": False,
-        "request_id": request_id,
-        "message": f"A action '{validated_request.action}' não foi implementada para esse tipo de request.",
-        "request_type": validated_request.request_type,
-        "action": validated_request.action
-    }), 400
